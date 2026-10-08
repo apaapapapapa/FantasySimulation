@@ -3,7 +3,7 @@ import { availableParallelism } from 'node:os';
 import { fileURLToPath } from 'node:url';
 import { Piscina } from 'piscina';
 import type { ReplayManifest } from '@fantasy/domain/spatial';
-import { currentMeasurements, startMeasurement } from '../measurements.ts';
+import { currentMeasurements, startMeasurement, type VerificationStage } from '../measurements.ts';
 import { OperationError } from '../operation-error.ts';
 import { PrivateDataError } from './replay-public.ts';
 import type { VerificationResponse, VerificationTask } from './verification-worker.ts';
@@ -20,7 +20,7 @@ export async function verifyInWorker(
   directory: ReplayLocation,
   manifest: ReplayManifest,
   publicData: boolean,
-  stage: 'validate.replay.worker' | 'validate.replay' = 'validate.replay.worker',
+  stage: VerificationStage = 'validate.replay.worker',
 ) {
   const measured = currentMeasurements(),
     end = startMeasurement(stage);
@@ -28,6 +28,14 @@ export async function verifyInWorker(
   try {
     const result = await run({ directory, manifest, publicData, measured: measured !== undefined });
     if (result.stages) measured?.verificationStages(result.stages);
+    if (result.observation)
+      measured?.verificationObservation({
+        replayId: manifest.id,
+        stage,
+        success: result.success,
+        attempted: result.attempted,
+        observation: result.observation,
+      });
     if (result.attempted) measured?.validation(manifest.id, result.success);
     for (const [name, bytes] of Object.entries(result.memory))
       measured?.capacity(`verification.worker.${name}`, bytes);

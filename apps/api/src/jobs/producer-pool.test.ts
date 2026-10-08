@@ -9,6 +9,7 @@ import { runBatch, reconcileBatch } from '../batch/batch-runner.ts';
 import { BattleBundles } from '../batch/battle-bundle.ts';
 import { BattlePool } from './worker-pool.ts';
 import { Piscina } from 'piscina';
+import { Measurements } from '../measurements.ts';
 
 it('refuses a terminated seal verifier before publication or a success reference', async () => {
   await withReplayDirectory(async (root) => {
@@ -70,12 +71,21 @@ it('finishes in the same bounded pool only after calculation releases its slot',
       await verify(...args);
     });
     try {
-      const { index } = await runBatch(plan, root, batchSource, { pool });
+      const measurement = new Measurements();
+      const { index } = await measurement.run(() => runBatch(plan, root, batchSource, { pool }));
       expect(index.complete).toBe(true);
       expect(index.slots[0]).toMatchObject({ state: 'complete', reused: false });
       expect(modes).toEqual([false]);
       expect(pool.pool.threads).toHaveLength(1);
       expect(pool.pool.queueSize).toBe(0);
+      const observations = measurement.report().verificationWorkerObservations;
+      expect(observations.map(({ stage }) => stage)).toEqual([
+        'validate.replay',
+        'validate.replay.worker',
+      ]);
+      expect(new Set(observations.map(({ replayId }) => replayId)).size).toBe(1);
+      expect(observations.every(({ success, attempted }) => success && attempted)).toBe(true);
+      expect(measurement.report().validation.calls).toBe(2);
     } finally {
       await pool.close();
     }

@@ -43,6 +43,15 @@ export type VerificationWorkerStage = {
 export type VerificationWorkerStages = Partial<
   Record<(typeof VERIFICATION_WORKER_STAGE_NAMES)[number], VerificationWorkerStage>
 >;
+/** Publication versus seal; the replay ID connects the two existing validations. */
+export type VerificationStage = 'validate.replay.worker' | 'validate.replay';
+type VerificationWorkerObservation = {
+  replayId: string;
+  stage: VerificationStage;
+  success: boolean;
+  attempted: boolean;
+  observation: Record<string, number>;
+};
 
 export function distribution(values: number[]) {
   const sorted = [...values].sort((a, b) => a - b),
@@ -64,6 +73,7 @@ export class Measurements {
   private readonly stages = new Map<string, Stage>();
   private readonly matches: MatchMeasurement[] = [];
   private readonly validations = new Map<string, { calls: number; failures: number }>();
+  private readonly verificationWorkerObservations: VerificationWorkerObservation[] = [];
   private readonly capacities: Record<string, number> = {};
   private readonly verificationWorkerStages: Record<
     string,
@@ -143,6 +153,25 @@ export class Measurements {
   addBytes(name: string, bytes: number) {
     const stage = this.stages.get(name);
     if (stage) stage.bytes += bytes;
+  }
+  /** Per-call diagnostics overlap wall/process CPU; they are never added to either. */
+  verificationObservation(value: VerificationWorkerObservation) {
+    const { observation } = value;
+    if (
+      value.replayId.length > 512 ||
+      !['validate.replay', 'validate.replay.worker'].includes(value.stage) ||
+      typeof value.success !== 'boolean' ||
+      typeof value.attempted !== 'boolean' ||
+      Object.keys(observation).sort().join(',') !==
+        'cpuSystemMs,cpuUserMs,elapsedMs,gcCount,gcDurationMs,threadId' ||
+      Object.values(observation).some((n) => !Number.isFinite(n) || n < 0) ||
+      !Number.isSafeInteger(observation.gcCount) ||
+      !Number.isSafeInteger(observation.threadId)
+    )
+      throw new Error('Invalid verification Worker observation');
+    if (this.verificationWorkerObservations.length < limit)
+      this.verificationWorkerObservations.push({ ...value, observation: { ...observation } });
+    else this.dropped++;
   }
   /** Worker-local busy intervals cannot be unioned with this process-local timeline. */
   verificationStages(value: VerificationWorkerStages) {
@@ -249,6 +278,7 @@ export class Measurements {
         ]),
       ),
       verificationWorkerStages: this.verificationWorkerStages,
+      verificationWorkerObservations: this.verificationWorkerObservations,
       matchWallMs: distribution(this.matches.map((m) => m.wallMs)),
       workerMetrics: Object.fromEntries(
         [...new Set(this.matches.flatMap((m) => Object.keys(m.worker ?? {})))]

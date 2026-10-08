@@ -512,12 +512,16 @@ const hash = (value: string) => value as `sha256:${string}`;
 const evidence = {
   'skill.shield.ox.1': {
     status: 'proven',
-    ability: {
-      id: 'shield-set-guard-v1',
-      revision: 1,
-      contentHash: hash('sha256:a1fe8279f9be78377331735a4f4c8f08e6bb50cd91301ba550b3e6d69a0af43d'),
+    recipe: {
+      kind: 'passive-ability',
+      ability: {
+        id: 'shield-set-guard-v1',
+        revision: 1,
+        contentHash: hash(
+          'sha256:a1fe8279f9be78377331735a4f4c8f08e6bb50cd91301ba550b3e6d69a0af43d',
+        ),
+      },
     },
-    resolutionKind: 'passive-ability',
     fixtureIds: [
       'fixture.skill.shield.ox.1.guard-battle',
       'fixture.skill.shield.ox.1.guard-replay',
@@ -530,10 +534,15 @@ const evidence = {
   },
   'skill.shield.dog.1': {
     status: 'definition-only',
-    ability: {
-      id: 'parry-v1',
-      revision: 1,
-      contentHash: hash('sha256:e224015688c44cd495f7e239f990ba0439b52a9f8e00da5bffddf27e9da05980'),
+    recipe: {
+      kind: 'active-ability',
+      ability: {
+        id: 'parry-v1',
+        revision: 1,
+        contentHash: hash(
+          'sha256:e224015688c44cd495f7e239f990ba0439b52a9f8e00da5bffddf27e9da05980',
+        ),
+      },
     },
     fixtureIds: ['g08-23'],
     evidenceFiles: ['packages/engine/src/spatial/reactions.test.ts'],
@@ -542,10 +551,15 @@ const evidence = {
   },
   'skill.shield.dog.2': {
     status: 'definition-only',
-    ability: {
-      id: 'projectile-deflection-v1',
-      revision: 1,
-      contentHash: hash('sha256:05e56186c80adbbd59ff592ea1fbab6ad5fa35115e2f3f770aabb0c05227151f'),
+    recipe: {
+      kind: 'active-ability',
+      ability: {
+        id: 'projectile-deflection-v1',
+        revision: 1,
+        contentHash: hash(
+          'sha256:05e56186c80adbbd59ff592ea1fbab6ad5fa35115e2f3f770aabb0c05227151f',
+        ),
+      },
     },
     fixtureIds: ['p6-deflection-01', 'p6-deflection-07'],
     evidenceFiles: ['packages/engine/src/spatial/reactions.test.ts'],

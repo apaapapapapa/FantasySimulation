@@ -9,7 +9,6 @@ import {
   compareIds,
   parseJson,
   resolveSkillAcquisitionV1,
-  revisionRefKey,
   skillAcquisitionRevisionHash,
   type RevisionRef,
   type SkillAcquisitionRevision,
@@ -19,22 +18,12 @@ import {
   skillAcquisitionRevisions,
   skillCatalogRevisions,
 } from './schema.ts';
-import { characterAbilityRefs, requireSkillCatalog } from './skill-records.ts';
+import { characterSkillCapabilities, requireSkillCatalog } from './skill-records.ts';
 import { jsonValue, type Store } from './store.ts';
 import { StoreError, invalidInput } from './store-error.ts';
 
 export class SkillAcquisitionStore {
   constructor(private readonly store: Store) {}
-
-  private capabilities(characterRef: RevisionRef) {
-    const refs = new Map(
-      characterAbilityRefs(this.store, characterRef).map((ref) => [revisionRefKey(ref), ref]),
-    );
-    // Equipment revisions do not yet carry authoritative tags. Tagged nodes fail closed rather
-    // than deriving inventory from appearance or trusting caller-supplied strings.
-    // The domain resolver canonicalizes ability ref order before digesting capabilities.
-    return { equipmentTags: [], abilityRefs: [...refs.values()] };
-  }
 
   private async resolveSnapshot(input: unknown): Promise<SkillAcquisitionRevision> {
     const selection = SkillAcquisitionSelectionSchema.parse(input),
@@ -48,7 +37,7 @@ export class SkillAcquisitionStore {
           ...selection,
           learnedNodeIds: [...selection.learnedNodeIds].sort(compareIds),
         },
-        this.capabilities(selection.character),
+        characterSkillCapabilities(this.store, selection.character),
       );
     } catch (error) {
       invalidInput(error, 'Invalid skill acquisition');

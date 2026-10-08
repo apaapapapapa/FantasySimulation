@@ -1,6 +1,7 @@
 import { and, eq } from 'drizzle-orm';
 import {
   SkillCatalogRecordSchema,
+  revisionRefKey,
   parseCompleteSkillCatalog,
   skillCatalogDigest,
   type RevisionRef,
@@ -46,4 +47,12 @@ export function characterAbilityRefs(store: Store, characterRef: RevisionRef): R
       (ref) => store.requireRevision('equipment', ref).definition.abilities,
     ),
   ];
+}
+
+/** Server-owned equipment capabilities; tags remain unavailable until an authoritative contract exists. */
+export function characterSkillCapabilities(store: Store, characterRef: RevisionRef) {
+  const refs = new Map(
+    characterAbilityRefs(store, characterRef).map((ref) => [revisionRefKey(ref), ref]),
+  );
+  return { equipmentTags: [], abilityRefs: [...refs.values()] };
 }

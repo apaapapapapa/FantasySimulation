@@ -73,7 +73,13 @@ it('keeps prerequisite locks and rejects a third path after resolving the closur
   const base = configuration(nodes);
   expect(workbenchNodeState(nodes[2]!, base)).toEqual({
     status: 'locked',
-    reasons: ['missing:sword-rat-1'],
+    reasons: [
+      {
+        code: 'unmet-learning-prerequisite',
+        nodeId: 'magic-rat-1',
+        prerequisiteNodeId: 'sword-rat-1',
+      },
+    ],
   });
   const learned = {
     ...base,
@@ -159,4 +165,51 @@ it('edits a saved V2 loadout from its resolved learning and the latest acquisiti
     'sword-rat-1',
     'judo-rat-1',
   ]);
+});
+
+it.each(['unknown', 'broken', 'cycle'] as const)(
+  'fails closed for %s prerequisite input',
+  (fault) => {
+    const first = node('sword-rat-1', 'sword'),
+      second = node('judo-rat-1', 'judo');
+    if (fault === 'broken') first.prerequisites = ['missing-node'];
+    if (fault === 'cycle') {
+      first.prerequisites = [second.id];
+      second.prerequisites = [first.id];
+    }
+    const nodes = [first, second],
+      base = {
+        ...configuration(nodes),
+        learnedNodeIds: [first.id, second.id],
+        enabledNodeIds: fault === 'unknown' ? ['missing-node'] : [],
+      };
+    const result = toggleEnabledNode(nodes, base, first.id);
+    expect(result.configuration).toBe(base);
+    expect(result.error).toBe('技の参照または前提に不整合があるため編成できません。');
+    expect(() =>
+      loadoutCounts(nodes, {
+        ...base,
+        enabledNodeIds: fault === 'unknown' ? ['missing-node'] : [first.id],
+      }),
+    ).toThrow();
+  },
+);
+
+it('rejects unlearned prerequisites and unavailable nodes before changing enabled selection', () => {
+  const prerequisite = node('sword-rat-1', 'sword'),
+    advanced = node('judo-rat-1', 'judo', [prerequisite.id]),
+    nodes = [prerequisite, advanced],
+    base = { ...configuration(nodes), learnedNodeIds: [advanced.id] };
+  expect(toggleEnabledNode(nodes, base, advanced.id)).toEqual({
+    configuration: base,
+    error: '前提を含む習得済みの技だけ編成できます。',
+  });
+  prerequisite.lifecycle = 'retired';
+  expect(
+    toggleEnabledNode(
+      nodes,
+      { ...base, learnedNodeIds: [prerequisite.id, advanced.id] },
+      advanced.id,
+    ).error,
+  ).toBe('利用可能として公開された技だけ編成できます。');
 });

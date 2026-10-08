@@ -506,10 +506,13 @@ const branches = [
 const evidence = {
   'skill.archery.rat.1': {
     status: 'proven',
-    ability: {
-      id: 'arrow',
-      revision: 1,
-      contentHash: 'sha256:d3adfc1d75e87120dfbfb9f11953f116e25b852db63a33e85a64442820303a81',
+    recipe: {
+      kind: 'active-ability',
+      ability: {
+        id: 'arrow',
+        revision: 1,
+        contentHash: 'sha256:d3adfc1d75e87120dfbfb9f11953f116e25b852db63a33e85a64442820303a81',
+      },
     },
     fixtureIds: ['fixture.skill.archery.rat.1.runtime'],
     evidenceFiles: ['apps/api/src/db/startup-data.test.ts'],
