@@ -16,7 +16,7 @@ overrides:
   postcss@8.5.28>source-map-js: 1.2.2
   # GHSA-67mh-4wv8-2f99: align the legacy Drizzle loader with Kit's patched esbuild.
   # Remove when core-utils drops its vulnerable 0.18 pin or Drizzle drops the loader.
-  '@esbuild-kit/core-utils@3.3.2>esbuild': 0.25.12
+  '@esbuild-kit/core-utils@3.3.2>esbuild': 0.28.2
 
 # The official Vite+ alias uses 0.3.3 while exposing the Vite 8 API.
 peerDependencyRules:
