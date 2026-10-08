@@ -108,6 +108,20 @@ describe('duration-balanced test shards', () => {
     expect(Math.max(...others)).toBeLessThanOrEqual(5);
     expect(others.reduce((sum, value) => sum + value, 0)).toBeLessThan(TEST_WEIGHTS[corpus]!);
   });
+  it('retains Worker isolation and complete coverage when light test inventory grows', () => {
+    const files = [
+      ...testFiles(process.cwd()),
+      ...Array.from({ length: 100 }, (_, i) => `scripts/extra-${i}.test.ts`),
+    ];
+    const shards = shardFiles(files, TEST_SHARDS);
+    expect(shards.flat().sort()).toEqual([...files].sort());
+    const corpus = 'apps/api/src/jobs/worker-corpus.test.ts';
+    const extra = shards.find((shard) => shard.includes(corpus))!.filter((file) => file !== corpus);
+    expect(extra.reduce((sum, file) => sum + (TEST_WEIGHTS[file] ?? 1), 0)).toBeLessThan(
+      TEST_WEIGHTS[corpus]!,
+    );
+    expect(shardFiles(files, 1)[0]).toHaveLength(files.length);
+  });
   it('moves only the heaviest known file to the front and keeps the given order otherwise', () => {
     const files = ['a.test.ts', 'b.test.ts', 'c.test.ts', 'd.test.ts', 'e.test.ts'];
     const order = (weights: Record<string, number>) =>

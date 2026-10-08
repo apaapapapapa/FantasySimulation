@@ -24,10 +24,23 @@ import {
   type SkillAcquisitionRevision,
 } from './skill-acquisition.ts';
 
+import {
+  MAX_ACTIVE_SKILL_NODES,
+  MAX_PASSIVE_SKILL_NODES,
+  inspectSkillEnabledNodes,
+  skillEquipmentReasons,
+  skillEnabledLearningReasons,
+  skillLearningReasons,
+  skillNodeDecision,
+  skillPrerequisiteClosure,
+} from './skill-selection.ts';
+
 export const SKILL_RESOLVER_VERSION = CURRENT_SKILL_RESOLVER_VERSION;
-export const MAX_ENABLED_SKILL_PATHS = 2;
-export const MAX_ACTIVE_SKILL_NODES = 8;
-export const MAX_PASSIVE_SKILL_NODES = 4;
+export {
+  MAX_ENABLED_SKILL_PATHS,
+  MAX_ACTIVE_SKILL_NODES,
+  MAX_PASSIVE_SKILL_NODES,
+} from './skill-selection.ts';
 
 const MAX_RESOLVED_SKILL_NODES = MAX_ACTIVE_SKILL_NODES + MAX_PASSIVE_SKILL_NODES;
 
@@ -254,47 +267,22 @@ export function skillNodeStates(
   requireKnownIds(nodes, 'learnedNodeIds', configuration.learnedNodeIds);
   requireKnownIds(nodes, 'enabledNodeIds', configuration.enabledNodeIds);
   return catalog.nodes.map((node) => {
-    if (node.lifecycle === 'retired')
-      return { nodeId: node.id, status: 'retired', reasons: ['node-retired'] };
-    if (node.lifecycle !== 'available')
-      return { nodeId: node.id, status: 'unsupported', reasons: ['node-not-available'] };
-    if (enabled.has(node.id)) return { nodeId: node.id, status: 'enabled', reasons: [] };
-    if (learned.has(node.id)) return { nodeId: node.id, status: 'learned', reasons: [] };
-    const reasons = [
-      ...(!eligible.has(node.id) ? ['not-eligible'] : []),
-      ...node.prerequisites
-        .filter((id) => !learned.has(id))
-        .map((id) => `missing-prerequisite:${id}`),
-    ];
+    const decision = skillNodeDecision(node, { eligible, learned, enabled });
     return {
       nodeId: node.id,
-      status: reasons.length ? 'locked' : 'learnable',
-      reasons,
+      status: decision.status,
+      // Retain the historical public state's string encoding at this compatibility boundary.
+      reasons: decision.reasons.map((reason) =>
+        reason.code === 'unavailable-node'
+          ? reason.lifecycle === 'retired'
+            ? 'node-retired'
+            : 'node-not-available'
+          : reason.code === 'unmet-learning-prerequisite'
+            ? `missing-prerequisite:${reason.prerequisiteNodeId}`
+            : reason.code,
+      ),
     };
   });
-}
-
-function closeEnabledNodes(nodes: Map<string, SkillNode>, enabledIds: string[]) {
-  const closed = new Set<string>();
-  const add = (id: string) => {
-    if (closed.has(id)) return;
-    const node = nodes.get(id)!;
-    node.prerequisites.forEach(add);
-    closed.add(id);
-  };
-  enabledIds.forEach(add);
-  return [...closed].sort(compareIds);
-}
-
-function nodeKind(node: SkillNode): 'active' | 'passive' {
-  const active = node.resolution.some(({ kind }) => kind === 'active-ability'),
-    passive = node.resolution.some(({ kind }) => kind !== 'active-ability');
-  if (active && passive)
-    throw new SkillLoadoutError(
-      'mixed-resolution-kind',
-      `Skill node mixes active and passive/augment recipes: ${node.id}`,
-    );
-  return active ? 'active' : 'passive';
 }
 
 /** Resolve a configuration into deterministic, revision-bound battle input. */
@@ -360,51 +348,52 @@ export async function resolveSkillLoadout(
   requireKnownIds(nodes, 'enabledNodeIds', configuration.enabledNodeIds);
   for (const id of learned) {
     const node = nodes.get(id)!;
-    if (!eligible.has(id))
-      throw new SkillLoadoutError('not-eligible', `Learned node is not eligible: ${id}`);
-    const missing = node.prerequisites.find((prerequisite) => !learned.has(prerequisite));
-    if (missing)
+    const reason = skillLearningReasons(node, { eligible, learned })[0];
+    if (reason?.code === 'not-eligible')
+      throw new SkillLoadoutError(reason.code, `Learned node is not eligible: ${id}`);
+    if (reason?.code === 'unmet-learning-prerequisite')
       throw new SkillLoadoutError(
-        'unmet-learning-prerequisite',
-        `Learned node ${id} requires ${missing}`,
+        reason.code,
+        `Learned node ${id} requires ${reason.prerequisiteNodeId}`,
       );
   }
-  for (const id of configuration.enabledNodeIds)
-    if (!learned.has(id))
-      throw new SkillLoadoutError('enabled-node-not-learned', `Enabled node is not learned: ${id}`);
+  const unlearnedEnabled = skillEnabledLearningReasons(configuration.enabledNodeIds, learned)[0];
+  if (unlearnedEnabled)
+    throw new SkillLoadoutError(
+      unlearnedEnabled.code,
+      `Enabled node is not learned: ${unlearnedEnabled.nodeId}`,
+    );
 
-  const resolvedNodeIds = closeEnabledNodes(nodes, configuration.enabledNodeIds),
+  const resolvedNodeIds = skillPrerequisiteClosure(catalog.nodes, configuration.enabledNodeIds),
     resolvedNodes = resolvedNodeIds.map((id) => nodes.get(id)!);
   for (const node of resolvedNodes) {
-    if (node.lifecycle !== 'available' || !node.resolution.length)
+    const reason = skillEquipmentReasons(node, new Set(equippedWeaponTags))[0];
+    if (reason?.code === 'unavailable-node')
       throw new SkillLoadoutError(
-        'unavailable-node',
+        reason.code,
         `Enabled closure contains unavailable node: ${node.id}`,
       );
-    const missingTag = node.weaponTags?.find((tag) => !equippedWeaponTags.includes(tag));
-    if (missingTag)
+    if (reason?.code === 'weapon-requirement')
       throw new SkillLoadoutError(
-        'weapon-requirement',
-        `Skill node ${node.id} requires equipped weapon tag ${missingTag}`,
+        reason.code,
+        `Skill node ${node.id} requires equipped weapon tag ${reason.weaponTag}`,
       );
   }
-  const paths = new Set(resolvedNodes.map((node) => node.coordinate.path));
-  if (paths.size > MAX_ENABLED_SKILL_PATHS)
+  const reason = inspectSkillEnabledNodes(resolvedNodes).reasons[0];
+  if (reason?.code === 'enabled-path-limit')
     throw new SkillLoadoutError(
-      'enabled-path-limit',
-      `Resolved loadout uses ${paths.size} paths; maximum is ${MAX_ENABLED_SKILL_PATHS}`,
+      reason.code,
+      `Resolved loadout uses ${reason.count} paths; maximum is ${reason.maximum}`,
     );
-  const active = resolvedNodes.filter((node) => nodeKind(node) === 'active').length,
-    passive = resolvedNodes.length - active;
-  if (active > MAX_ACTIVE_SKILL_NODES)
+  if (reason?.code === 'mixed-resolution-kind')
     throw new SkillLoadoutError(
-      'active-node-limit',
-      `Resolved loadout uses ${active} active nodes; maximum is ${MAX_ACTIVE_SKILL_NODES}`,
+      reason.code,
+      `Skill node mixes active and passive/augment recipes: ${reason.nodeId}`,
     );
-  if (passive > MAX_PASSIVE_SKILL_NODES)
+  if (reason?.code === 'active-node-limit' || reason?.code === 'passive-node-limit')
     throw new SkillLoadoutError(
-      'passive-node-limit',
-      `Resolved loadout uses ${passive} passive/augment nodes; maximum is ${MAX_PASSIVE_SKILL_NODES}`,
+      reason.code,
+      `Resolved loadout uses ${reason.count} ${reason.code === 'active-node-limit' ? 'active' : 'passive/augment'} nodes; maximum is ${reason.maximum}`,
     );
 
   const digestInput = {

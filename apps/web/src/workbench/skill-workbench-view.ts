@@ -5,6 +5,8 @@ import {
   revisionRefKey,
   skillResolutionAbilityRefs,
   type SkillNode,
+  type SkillSelectionReason,
+  type SkillPreviewReason,
 } from '@fantasy/domain';
 import type { SkillAbility } from './skill-api.ts';
 import type { WorkbenchNodeState } from './skill-workbench-state.ts';
@@ -74,20 +76,26 @@ export function abilitiesForNode(node: SkillNode, abilities: SkillAbility[]) {
   }));
 }
 
-const reasonText = (reason: string, nodes: Map<string, SkillNode>) => {
-  if (reason === 'not-eligible') return 'このキャラクターでは未解禁です';
-  if (reason.startsWith('lifecycle:')) {
-    const lifecycle = reason.slice('lifecycle:'.length);
-    if (lifecycle === 'draft') return 'ドラフトのため利用できません';
-    if (lifecycle === 'implemented') return '実装済みですが、利用可能として公開されていません';
-    if (lifecycle === 'retired') return '廃止済みのため利用できません';
-    return `ライフサイクルが ${lifecycle} のため利用できません`;
+const reasonText = (reason: SkillSelectionReason, nodes: Map<string, SkillNode>) => {
+  if (reason.code === 'not-eligible') return 'このキャラクターでは未解禁です';
+  if (reason.code === 'unavailable-node') {
+    if (reason.lifecycle === 'draft') return 'ドラフトのため利用できません';
+    if (reason.lifecycle === 'implemented')
+      return '実装済みですが、利用可能として公開されていません';
+    if (reason.lifecycle === 'retired') return '廃止済みのため利用できません';
+    return '実行可能な定義がないため利用できません';
   }
-  if (reason.startsWith('missing:')) {
-    const id = reason.slice('missing:'.length);
+  if (reason.code === 'unmet-learning-prerequisite') {
+    const id = reason.prerequisiteNodeId;
     return `前提「${nodes.get(id)?.name ?? id}」を先に習得してください`;
   }
-  return reason;
+  if (reason.code === 'weapon-requirement')
+    return `必要な武器タグ「${reason.weaponTag}」を確認できません`;
+  if (reason.code === 'augment-base-not-owned')
+    return `強化元「${reason.baseAbility.id}」の指定版を所持していません`;
+  if (reason.code === 'enabled-node-not-learned') return '編成する前に習得してください';
+  if ('maximum' in reason) return `編成上限を超えています（${reason.count}/${reason.maximum}）`;
+  return reason.code;
 };
 
 export function workbenchReasonTexts(state: WorkbenchNodeState, nodes: SkillNode[]): string[] {
@@ -115,4 +123,23 @@ export function formatAbilityConstraints(ability: SkillAbility) {
     `射程 ${definition.rangeMm} mm`,
     `詠唱中移動 ${definition.movementWhileCasting === 'allow' ? '可' : '停止'}`,
   ].join(' / ');
+}
+
+export function skillPreviewReasonText(reason: SkillPreviewReason, nodes: SkillNode[]) {
+  if (reason.code === 'receipt-selection')
+    return '能力の組み合わせ、解決数、または空の編成を保存できません。';
+  if (reason.code === 'ability-application') {
+    const labels: Record<typeof reason.reason, string> = {
+      'active-trigger': '発動技のtriggerが一致しません',
+      'passive-trigger': '常時効果のtriggerが一致しません',
+      'augment-identity': '強化先の能力identityが一致しません',
+      'augment-trigger': '強化前後のtriggerが一致しません',
+      'augment-base-not-owned': '指定版の強化元能力を所持していません',
+      'duplicate-augment': '同じ元能力への強化が重複しています',
+      'conflicting-grant': '同じ能力IDの異なる定義が競合しています',
+      'definition-reference': '指定した能力定義を確認できません',
+    };
+    return `${labels[reason.reason]}${reason.abilityId ? `（${reason.abilityId}）` : ''}`;
+  }
+  return reasonText(reason, new Map(nodes.map((node) => [node.id, node])));
 }

@@ -14,6 +14,9 @@ async function readyWorkbench(page: import('@playwright/test').Page) {
   await page.goto('/');
   const workbench = page.locator('.skill-workbench');
   await expect(workbench.locator('fieldset').first()).toBeEnabled();
+  await expect(workbench.getByRole('status', { name: '習得可否の確認' })).toContainText(
+    'サーバーで習得・編成条件を確認しました',
+  );
   await expect(workbench.locator('.skill-matrix tbody tr')).toHaveCount(6);
   await expect(workbench.locator('.skill-matrix tbody td')).toHaveCount(72);
   await expect(workbench.locator('.skill-matrix tbody td > button')).toHaveCount(72);
@@ -549,4 +552,79 @@ test('scout rat saves, battles and replays one dependent through both viewers', 
   await expect(replay.locator('[data-dependent]')).toHaveCount(0);
   await slider.fill((await slider.getAttribute('max'))!);
   await expect(replay.locator('[data-dependent]')).toHaveCount(0);
+});
+
+test('skill preview keeps pending and failed eligibility unavailable without saving', async ({
+  page,
+}) => {
+  let release!: () => void;
+  const pending = new Promise<void>((resolve) => {
+    release = resolve;
+  });
+  let writes = 0,
+    intercepted = false;
+  page.on('request', (request) => {
+    if (
+      ['POST', 'PATCH'].includes(request.method()) &&
+      /\/api\/skill-(?:acquisitions|loadouts)(?:\/|$)/.test(new URL(request.url()).pathname)
+    )
+      writes++;
+  });
+  await page.route('**/api/skill-preview', async (route) => {
+    if (intercepted) return route.continue();
+    intercepted = true;
+    await pending;
+    await route.fulfill({ status: 503, json: { error: 'preview unavailable' } });
+  });
+  await page.goto('/');
+  const workbench = page.locator('.skill-workbench'),
+    status = workbench.getByRole('status', { name: '習得可否の確認' });
+  await expect(workbench.locator('fieldset').first()).toBeEnabled();
+  await expect(status).toContainText('確認中');
+  await expect(workbench.getByText('習得可能', { exact: true })).toHaveCount(0);
+  await expect(workbench.locator('.skill-node-action')).toBeDisabled();
+  await expect(workbench.locator('.actions .primary')).toBeDisabled();
+  release();
+  await expect(status).toContainText('確認できません');
+  await expect(workbench.getByText('習得可能', { exact: true })).toHaveCount(0);
+  await expect(workbench.locator('.actions .primary')).toBeDisabled();
+  const character = workbench.locator('.skill-loadout-controls select').first();
+  await character.selectOption({ index: 1 });
+  await expect(status).toContainText('サーバーで習得・編成条件を確認しました');
+  expect(writes).toBe(0);
+});
+
+test('skill preview ignores an old character response after a newer selection', async ({
+  page,
+}) => {
+  let release!: () => void;
+  const delayed = new Promise<void>((resolve) => {
+    release = resolve;
+  });
+  let intercepted = false;
+  await page.route('**/api/skill-preview', async (route) => {
+    if (intercepted) return route.continue();
+    intercepted = true;
+    const response = await route.fetch(),
+      result = await response.json();
+    await delayed;
+    // The old selection deliberately has no eligible nodes, so an overwrite is observable.
+    await route.fulfill({ response, json: { ...result, eligibilityNodeIds: [] } });
+  });
+  await page.goto('/');
+  const workbench = page.locator('.skill-workbench'),
+    status = workbench.getByRole('status', { name: '習得可否の確認' });
+  await expect(workbench.locator('fieldset').first()).toBeEnabled();
+  await expect(status).toContainText('確認中');
+  const character = workbench.locator('.skill-loadout-controls select').first();
+  await character.selectOption({ index: 1 });
+  const selected = await character.inputValue();
+  await expect(status).toContainText('サーバーで習得・編成条件を確認しました');
+  const eligible = workbench.getByText('習得可能', { exact: true });
+  await expect(eligible).not.toHaveCount(0);
+  const count = await eligible.count();
+  release();
+  await expect(character).toHaveValue(selected);
+  await expect(eligible).toHaveCount(count);
+  await expect(status).toContainText('サーバーで習得・編成条件を確認しました');
 });

@@ -32,6 +32,8 @@ export const revisionReference = ({ id, revision, contentHash }: Revision): Revi
   revision,
   contentHash,
 });
+/** Exact revision identity, including its content hash, for sets, maps and option keys. */
+export const revisionRefKey = (ref: RevisionRef) => `${ref.id}@${ref.revision}:${ref.contentHash}`;
 export const revisionHash = (revision: Pick<Revision, 'kind' | 'schemaVersion' | 'definition'>) =>
   contentHash({
     kind: revision.kind,

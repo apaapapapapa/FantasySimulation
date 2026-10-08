@@ -12,6 +12,8 @@ export const UI_CASES = [
   'battle-api-error',
   'skill-workbench-desktop',
   'skill-workbench-mobile',
+  'skill preview keeps pending and failed eligibility unavailable without saving',
+  'skill preview ignores an old character response after a newer selection',
   'retries a failed loadout save without creating a second acquisition',
   'keeps an exact saved loadout selected when its acquisition head advances',
   'reloads a legacy V1 loadout and upgrades it through acquisition V2',
@@ -24,6 +26,8 @@ export const UI_INTERACTIVE_PARTS = {
   smoke: [
     'skill-workbench-desktop',
     'skill-workbench-mobile',
+    'skill preview keeps pending and failed eligibility unavailable without saving',
+    'skill preview ignores an old character response after a newer selection',
     'retries a failed loadout save without creating a second acquisition',
     'keeps an exact saved loadout selected when its acquisition head advances',
     'reloads a legacy V1 loadout and upgrades it through acquisition V2',

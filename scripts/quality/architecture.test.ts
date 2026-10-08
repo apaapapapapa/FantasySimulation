@@ -16,6 +16,8 @@ afterEach(() => {
 });
 it.each([
   ['scripts/probe.ts', 'apps/api/src/tooling.ts', null],
+  ['scripts/probe.ts', 'apps/api/src/catalog.ts', null],
+  ['scripts/probe.ts', 'apps/api/src/db/startup-skill-catalog.ts', 'tools-use-public-api'],
   ['e2e/server.ts', 'apps/api/src/local.ts', null],
   ['apps/cli/src/run.ts', 'apps/api/src/artifacts.ts', null],
   ['scripts/probe.ts', 'apps/api/src/jobs/job-store.ts', 'tools-use-public-api'],

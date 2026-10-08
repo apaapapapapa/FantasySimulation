@@ -3,7 +3,13 @@ import {
   AnySkillLoadoutHeadSchema,
   AnySkillLoadoutPageSchema,
   AnySkillLoadoutPatchSchema,
+  DEFAULT_SKILL_CATALOG_REFERENCE,
   JobResponseSchema,
+  canonicalJson,
+  SkillPreviewRequestSchema,
+  SkillPreviewResponseSchema,
+  type SkillPreviewRequest,
+  type SkillPreviewResponse,
   SkillAcquisitionHeadSchema,
   SkillCatalogRecordSchema,
   type AnySkillConfiguration,
@@ -24,7 +30,10 @@ export type SkillLoadoutSelection = {
   loadout: SkillRevisionRef;
   character: SkillRevisionRef;
 };
-export const DEFAULT_SKILL_CATALOG = { id: 'skill-catalog-v1', revision: 10 } as const;
+export const DEFAULT_SKILL_CATALOG = {
+  id: DEFAULT_SKILL_CATALOG_REFERENCE.id,
+  revision: DEFAULT_SKILL_CATALOG_REFERENCE.revision,
+} as const;
 export const sameSkillRevisionRef = (left: SkillRevisionRef, right: SkillRevisionRef) =>
   left.id === right.id &&
   left.revision === right.revision &&
@@ -50,6 +59,7 @@ export type SkillBattleRequest = {
 };
 
 export interface SkillWorkbenchClient {
+  preview(input: SkillPreviewRequest, signal?: AbortSignal): Promise<SkillPreviewResponse>;
   getCatalog(id: string, version: number, signal?: AbortSignal): Promise<SkillCatalog>;
   listCharacters(signal?: AbortSignal): Promise<SkillCharacter[]>;
   listAbilities(signal?: AbortSignal): Promise<SkillAbility[]>;
@@ -106,6 +116,12 @@ const catalogRecord = {
 
 /** The only place that knows the provisional SK-02 HTTP envelopes. */
 export const skillWorkbenchApi: SkillWorkbenchClient = {
+  preview: (input, signal) =>
+    api('skill-preview', SkillPreviewResponseSchema, {
+      method: 'POST',
+      body: SkillPreviewRequestSchema.parse(input),
+      ...(signal ? { signal } : {}),
+    }),
   getCatalog: (id, version, signal) =>
     api(`skill-catalogs/${encodeURIComponent(id)}/${version}`, catalogRecord, {
       ...(signal ? { signal } : {}),
@@ -174,3 +190,24 @@ export const skillWorkbenchApi: SkillWorkbenchClient = {
       headers: { 'x-client-id': 'local-web', 'idempotency-key': crypto.randomUUID() },
     }),
 };
+
+/** Collection-valued proposal identity; exact character/catalog references are preserved. */
+export function skillPreviewKey(input: SkillPreviewRequest) {
+  return canonicalJson({
+    ...input,
+    learnedNodeIds: [...input.learnedNodeIds].sort(),
+    enabledNodeIds: [...input.enabledNodeIds].sort(),
+  });
+}
+export async function currentSkillPreview(
+  client: Pick<SkillWorkbenchClient, 'preview'>,
+  input: SkillPreviewRequest,
+  attempt: { isCurrent(): boolean },
+  signal: AbortSignal,
+) {
+  const result = await client.preview(input, signal);
+  if (signal.aborted || !attempt.isCurrent()) return null;
+  if (skillPreviewKey(result.proposal) !== skillPreviewKey(input))
+    throw new Error('Preview proposal identity mismatch');
+  return result;
+}
