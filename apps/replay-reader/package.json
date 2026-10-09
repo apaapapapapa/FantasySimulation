@@ -11,7 +11,7 @@
     "@fantasy/domain": "workspace:*"
   },
   "devDependencies": {
-    "@cloudflare/workers-types": "5.20261005.1",
+    "@cloudflare/workers-types": "5.20261006.1",
     "wrangler": "4.147.0"
   }
 }
