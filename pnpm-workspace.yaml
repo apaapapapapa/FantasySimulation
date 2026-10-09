@@ -7,7 +7,7 @@ overrides:
   vitest: 4.1.11
   # GHSA-wq5f-xc86-pv6w (bundled libvips/librsvg): Miniflare pins sharp 0.35.4; remove when
   # Miniflare updates its pin.
-  miniflare@5.20261001.0-alpha>sharp: 0.35.5
+  miniflare@5.20261006.0-alpha>sharp: 0.35.5
   # GHSA-68fv-2mgg-jv7q: Vite+ core's PostCSS accepts ^1.2.1 but the lock retains 1.2.1.
   # Remove when PostCSS requires the patched release.
   postcss@8.5.28>source-map-js: 1.2.2
