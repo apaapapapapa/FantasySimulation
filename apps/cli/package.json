@@ -14,7 +14,7 @@
     "publication": "node --env-file-if-exists=../../.env --import tsx src/publication.ts"
   },
   "dependencies": {
-    "@aws-sdk/client-s3": "3.1138.0",
+    "@aws-sdk/client-s3": "3.1146.0",
     "@fantasy/api": "workspace:*",
     "@fantasy/domain": "workspace:*",
     "@fantasy/engine": "workspace:*",
