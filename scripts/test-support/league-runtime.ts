@@ -69,6 +69,9 @@ export async function runtimeFixture(root: string, artifactVersion = '6.2.1') {
   const git = (...args: string[]) =>
     execFileSync('git', args, { cwd: source, encoding: 'utf8' }).trim();
   git('init', '--quiet');
+  // Detached post-commit maintenance (geometric repacking in Git 2.54+) can delete
+  // loose objects while the local clone below copies them.
+  git('config', 'maintenance.auto', 'false');
   git('config', 'user.email', 'runtime-fixture@example.invalid');
   git('config', 'user.name', 'Runtime fixture');
   await write(join(source, '.gitignore'), 'node_modules\n');
