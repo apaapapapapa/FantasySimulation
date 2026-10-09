@@ -1,6 +1,6 @@
-import { expect, it } from 'vite-plus/test';
+import { expect, it, vi } from 'vite-plus/test';
 import { withReplayDirectory } from '@fantasy/api/testing';
-import { readFile, writeFile, readlink } from 'node:fs/promises';
+import { readdir, readFile, writeFile, readlink } from 'node:fs/promises';
 import { join } from 'node:path';
 import { execFileSync } from 'node:child_process';
 import { runtimeFixture } from './test-support/league-runtime.ts';
@@ -84,4 +84,27 @@ it('rejects an altered native file digest and a path traversing out of the check
       installLeagueRuntime(fixture.target, fixture.distribution, fixture.sha),
     ).rejects.toThrow('path');
   });
+});
+it('keeps the fixture source repository free of automatic Git maintenance', async () => {
+  // Git 2.54+ repacks in a detached process after the fixture commit whenever two loose
+  // objects share objects/17, deleting loose objects while the local clone copies them.
+  // Force a foreground maintenance task so any permitted maintenance leaves a pack.
+  const forced = [
+    ['maintenance.autoDetach', 'false'],
+    ['maintenance.loose-objects.enabled', 'true'],
+    ['maintenance.loose-objects.auto', '-1'],
+  ];
+  vi.stubEnv('GIT_CONFIG_COUNT', String(forced.length));
+  forced.forEach(([key, value], index) => {
+    vi.stubEnv(`GIT_CONFIG_KEY_${index}`, key);
+    vi.stubEnv(`GIT_CONFIG_VALUE_${index}`, value);
+  });
+  try {
+    await withReplayDirectory(async (root) => {
+      const fixture = await runtimeFixture(root);
+      expect(await readdir(join(fixture.source, '.git/objects/pack'))).toEqual([]);
+    });
+  } finally {
+    vi.unstubAllEnvs();
+  }
 });
