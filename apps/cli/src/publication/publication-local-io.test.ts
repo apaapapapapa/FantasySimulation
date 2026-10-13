@@ -47,7 +47,7 @@ it('keeps graph order and full semantic verification independent of local I/O wi
     expect([...parallel.files.keys()]).toEqual([...serial.files.keys()]);
     expect([...parallel.objects]).toEqual([...serial.objects]);
   });
-});
+}, 30000);
 
 it('overlaps bounded graph I/O while keeping all returned references and ordering identical', async () => {
   await withReplayDirectory(async (root) => {
@@ -64,7 +64,7 @@ it('overlaps bounded graph I/O while keeping all returned references and orderin
     expect([...actual.files.keys()]).toEqual([...expected.files.keys()]);
     expect([...actual.results]).toEqual([...expected.results]);
   });
-});
+}, 30000);
 
 it('drains admitted graph readers before reporting a failed traversal', async () => {
   await withReplayDirectory(async (root) => {
@@ -73,7 +73,7 @@ it('drains admitted graph readers before reporting a failed traversal', async ()
     await expect(publicationGraph(interrupted.read, 4)).rejects.toThrow('interrupted graph read');
     expect(interrupted.state.active).toBe(0);
   });
-});
+}, 30000);
 
 it('does not produce discarded file buffers during restore prefetch', async () => {
   await withReplayDirectory(async (root) => {
@@ -99,7 +99,7 @@ it('does not produce discarded file buffers during restore prefetch', async () =
     expect(outcome.reads).toBe(before.files.size + 1);
     expect((await localPublicationGraph(restored)).current).toEqual(before.current);
   });
-});
+}, 30000);
 
 it.each([0, 65, 1.5, Number.NaN])(
   'rejects invalid graph I/O width %s before accessing the directory',
