@@ -1,5 +1,30 @@
+import type { Page } from '@playwright/test';
 import { test, expect } from '../fixtures.ts';
 import { complete, disableWebgl } from './fixtures.ts';
+
+type HeldFrames = { replayFrames: { hold(): void; release(): void } };
+/** Queue replay worker requests on demand so a frame is still loading when pause lands. */
+const holdableFrames = (page: Page) =>
+  page.addInitScript(() => {
+    const post = Worker.prototype.postMessage;
+    const held: [Worker, Parameters<typeof post>][] = [];
+    let holding = false;
+    Worker.prototype.postMessage = function (this: Worker, ...args: Parameters<typeof post>) {
+      if (holding) held.push([this, args]);
+      else post.apply(this, args);
+    } as typeof post;
+    Object.assign(window, {
+      replayFrames: {
+        hold: () => {
+          holding = true;
+        },
+        release: () => {
+          holding = false;
+          for (const [worker, args] of held.splice(0)) post.apply(worker, args);
+        },
+      },
+    });
+  });
 
 // The next Chromium context stalled after fallback playback in main 37217266706.
 // Keep the same case/deadline, but close its browser before another suite can use it.
@@ -7,6 +32,7 @@ test.use({ browserSession: 'repeat-playback' });
 
 test('static-repeat-playback', async ({ page }) => {
   await disableWebgl(page);
+  await holdableFrames(page);
   await page.goto(complete.url);
   const step = page.getByLabel('現在のstep');
   const repeat = page.getByRole('checkbox', { name: '繰り返し再生', exact: true });
@@ -53,5 +79,20 @@ test('static-repeat-playback', async ({ page }) => {
   await expect(play).toBeDisabled();
   await expect(page.getByRole('region', { name: '再生時刻のログ' })).toContainText('terminal');
   await expect(page.getByLabel('保存結果のhash')).toHaveText(hash!);
+
+  // Pause keeps the shown frame even while the repeat rewind to step 0 is still loading
+  // (full CI 38436408795 paused at 240 and then displayed 0).
+  const timeline = page.getByRole('slider', { name: '表示step', exact: true });
+  await repeat.check();
+  await page.evaluate(() => (window as unknown as HeldFrames).replayFrames.hold());
+  await play.click();
+  await expect(timeline).toHaveValue('0');
+  await expect(step).toHaveText('240');
+  await pause.click();
+  await page.evaluate(() => (window as unknown as HeldFrames).replayFrames.release());
+  await expect(page.getByRole('status', { name: '読込状態' })).toHaveCount(0);
+  await expect(timeline).toHaveValue('240');
+  await page.waitForTimeout(100);
+  await expect(step).toHaveText('240');
   await expect(page.getByRole('alert')).toHaveCount(0);
 });

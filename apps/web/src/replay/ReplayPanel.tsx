@@ -48,6 +48,8 @@ export function ReplayPanel({
   const [target, setTarget] = useState(0);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(true);
+  // The target whose frame is on screen; `loading` turns on only after a new target renders.
+  const [loadedTarget, setLoadedTarget] = useState<number | null>(null);
   const [playing, setPlaying] = useState(false);
   const [repeat, setRepeat] = useState(false);
   const [speed, setSpeed] = useState(1);
@@ -77,7 +79,7 @@ export function ReplayPanel({
     [replay, frame, perspective],
   );
   const panel = useRef<HTMLElement | null>(null);
-  const cursor = useRef({ target, loading });
+  const cursor = useRef({ target, loading, loadedTarget });
   const failed = useCallback((error: unknown, signal: AbortSignal) => {
     if (signal.aborted) return;
     setError(errorText(error));
@@ -91,8 +93,8 @@ export function ReplayPanel({
     }
   }, [replay]);
   useEffect(() => {
-    cursor.current = { target, loading };
-  }, [target, loading]);
+    cursor.current = { target, loading, loadedTarget };
+  }, [target, loading, loadedTarget]);
   function seek(step: number) {
     setPlaying(false);
     setTarget(step);
@@ -101,6 +103,7 @@ export function ReplayPanel({
     const controller = new AbortController();
     setReplay(null);
     setFrame(null);
+    setLoadedTarget(null);
     setTarget(0);
     setError('');
     setNotice('');
@@ -134,6 +137,7 @@ export function ReplayPanel({
       .then((next) => {
         if (!controller.signal.aborted) {
           setFrame(next);
+          setLoadedTarget(target);
           setLoading(false);
         }
       })
@@ -147,7 +151,8 @@ export function ReplayPanel({
     const end = replay.manifest.lastVerifiedStep ?? 0;
     let frame = 0;
     const tick = (now: number) => {
-      if (!cursor.current.loading) {
+      // Advance or rewind only once the requested frame is on screen.
+      if (!cursor.current.loading && cursor.current.loadedTarget === cursor.current.target) {
         if (cursor.current.target === end && repeat && end > 0) {
           // Show the loaded final frame before rewinding. Start the next clock
           // only once step 0 has loaded, so buffering cannot skip the opening.
@@ -285,7 +290,12 @@ export function ReplayPanel({
                   repeat={repeat}
                   speed={speed}
                   onSeek={seek}
-                  onPlaying={() => setPlaying((value) => !value)}
+                  onPlaying={() => {
+                    // Pause keeps the frame on screen. A frame still loading, such as the
+                    // repeat rewind to step 0, must not replace it after playback stops.
+                    if (playing && loadedTarget !== null) setTarget(loadedTarget);
+                    setPlaying((value) => !value);
+                  }}
                   onRepeat={setRepeat}
                   onSpeed={setSpeed}
                 />
