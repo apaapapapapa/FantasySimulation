@@ -224,8 +224,8 @@ importers:
   packages/engine:
     dependencies:
       '@dimforge/rapier3d-compat':
-        specifier: 0.20.0
-        version: 0.20.0
+        specifier: 0.21.0
+        version: 0.21.0
       '@fantasy/domain':
         specifier: workspace:*
         version: link:../domain
@@ -467,8 +467,8 @@ packages:
   '@dimforge/rapier3d-compat@0.12.0':
     resolution: {integrity: sha512-uekIGetywIgopfD97oDL5PfeezkFpNhwlzlaEYNOA0N6ghdsOvh/HYjSMek5Q2O1PYvRSDFcqFVJl4r4ZBwOow==}
 
-  '@dimforge/rapier3d-compat@0.20.0':
-    resolution: {integrity: sha512-X4W9pJBdGRX5CO3c/gUNjBFEFG2fn4nYxp9k8STdBDaLa0/w5XTW2ArpayS+9jGFojTi3uFSOWAElCd4rkpekA==}
+  '@dimforge/rapier3d-compat@0.21.0':
+    resolution: {integrity: sha512-tCl1HPGwOhn5aCQbgqWbOH+Nx/5fnr3IPAnzQuR7zIhC/raqi2yxC6LhvZqjdI2El5hQgY5RDAwDrAjAi2FdPA==}
 
   '@drizzle-team/brocli@0.10.2':
     resolution: {integrity: sha512-z33Il7l5dKjUgGULTqBsQBQwckHh5AbIuxhdsIxDDiZAzBOrZO6q9ogcWC65kU382AfynTfgNumVcNIjuIua6w==}
@@ -4892,7 +4892,7 @@ snapshots:
 
   '@dimforge/rapier3d-compat@0.12.0': {}
 
-  '@dimforge/rapier3d-compat@0.20.0': {}
+  '@dimforge/rapier3d-compat@0.21.0': {}
 
   '@drizzle-team/brocli@0.10.2': {}
 
