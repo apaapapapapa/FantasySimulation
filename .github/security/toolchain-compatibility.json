@@ -1,6 +1,6 @@
 {
-  "vitePlus": "0.3.3",
-  "vitest": "4.1.11",
-  "evidence": "Vite+ v0.3.3 packages/cli/package.json imports catalog Vitest; upstream pnpm-workspace.yaml pins vitest and @vitest/* to 4.1.11. Revalidate the pair and Linux CI on every update.",
-  "upstream": "https://github.com/voidzero-dev/vite-plus/blob/v0.3.3/pnpm-workspace.yaml"
+  "vitePlus": "1.4.0",
+  "vitest": "5.0.5",
+  "evidence": "Vite+ v1.4.0 package.json depends on vitest and the bundled @vitest/* packages at 5.0.5; upstream pnpm-workspace.yaml pins vitest and @vitest/* to 5.0.5. Revalidate the pair and Linux CI on every update.",
+  "upstream": "https://github.com/voidzero-dev/vite-plus/blob/v1.4.0/pnpm-workspace.yaml"
 }

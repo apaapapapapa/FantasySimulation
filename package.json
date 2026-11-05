@@ -65,8 +65,8 @@
     "semantic-release": "25.0.9",
     "tsx": "4.23.15",
     "typescript": "7.0.2",
-    "vite-plus": "0.3.3",
-    "zod": "4.6.5"
+    "vite-plus": "1.4.0",
+    "zod": "4.6.7"
   },
   "engines": {
     "node": ">=24.19.0 <25"

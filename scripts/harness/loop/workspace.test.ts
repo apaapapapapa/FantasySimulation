@@ -304,6 +304,7 @@ it.each([
   'apps/replay-reader/dist',
   'apps/cli/node_modules/.vite',
   'apps/cli/node_modules/.vite-temp',
+  'apps/cli/node_modules/.vitest-cache',
 ])('never exposes tracked inputs in %s or dangling output symlinks as writable', (output) => {
   const f = fixture();
   try {
