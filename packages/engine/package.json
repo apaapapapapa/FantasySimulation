@@ -10,7 +10,7 @@
     "./tooling": "./src/tooling.ts"
   },
   "dependencies": {
-    "@dimforge/rapier3d-compat": "0.20.0",
+    "@dimforge/rapier3d-compat": "0.21.0",
     "@fantasy/domain": "workspace:*"
   }
 }
