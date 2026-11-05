@@ -37,8 +37,8 @@ validator and H4 tests without write tokens or App secrets; it is not the update
 ## Manual toolchain review and acceptance
 
 Review Vite+, alias, peer override, bundled Vitest, lockfile and compatibility record
-together; never advance reviewed records automatically. Vite+ 0.3.3 pins Vitest and
-`@vitest/*` to 4.1.11. Node/pnpm/types retain exact pins and a matching engine range.
+together; never advance reviewed records automatically. Vite+ 1.4.0 pins Vitest and
+`@vitest/*` to 5.0.5. Node/pnpm/types retain exact pins and a matching engine range.
 Refresh pnpm shims with `vp install --force --frozen-lockfile` after a pin change.
 Even Rapier patches need physics version, exact WASM hash, engine identity and
 fixed-seed replay evidence. Run `engine:check`; do not regenerate fixtures to pass.

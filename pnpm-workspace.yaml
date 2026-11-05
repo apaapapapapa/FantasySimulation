@@ -3,23 +3,20 @@ packages:
   - packages/*
 
 overrides:
-  vite: npm:@voidzero-dev/vite-plus-core@0.3.3
-  vitest: 4.1.11
-  # GHSA-wq5f-xc86-pv6w (bundled libvips/librsvg): Miniflare pins sharp 0.35.4; remove when
-  # Miniflare updates its pin.
-  miniflare@5.20261006.0-alpha>sharp: 0.35.5
-  # GHSA-68fv-2mgg-jv7q: Vite+ core's PostCSS accepts ^1.2.1 but the lock retains 1.2.1.
-  # Remove when PostCSS requires the patched release.
-  postcss@8.5.28>source-map-js: 1.2.2
+  vite: npm:@voidzero-dev/vite-plus-core@1.4.0
+  vitest: 5.0.5
+  # GHSA-xjj6-f33q-929c / GHSA-4w7w-5xrc-9h26 / GHSA-2m5v-pch6-74hx / GHSA-qrxm-fqhp-jwvm:
+  # Miniflare pins undici 7.29.1; remove when Miniflare updates its pin.
+  miniflare@5.20261006.1-alpha>undici: 7.30.1
   # GHSA-67mh-4wv8-2f99: run the legacy Drizzle loader on a patched esbuild; its transforms and
   # dev-server origin checks are exercised by scripts/security/esbuild.test.ts.
   # Remove when core-utils drops its vulnerable 0.18 pin or Drizzle drops the loader.
   '@esbuild-kit/core-utils@3.3.2>esbuild': 0.28.2
 
-# The official Vite+ alias uses 0.3.3 while exposing the Vite 8 API.
+# The official Vite+ alias uses 1.4.0 while exposing the Vite 8 API.
 peerDependencyRules:
   allowedVersions:
-    vite: 0.3.3
+    vite: 1.4.0
 
 allowBuilds:
   # Required by the pinned Drizzle SQLite driver; other new scripts remain denied.

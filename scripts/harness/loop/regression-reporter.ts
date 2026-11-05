@@ -1,4 +1,4 @@
-import type { Reporter } from 'vite-plus/test/reporters';
+import type { Reporter } from 'vite-plus/test/node';
 
 /** Mounted read-only by the controller. Hooks are deliberately unsupported for proof tests. */
 export default class RegressionReporter implements Reporter {

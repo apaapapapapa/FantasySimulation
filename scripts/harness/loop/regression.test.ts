@@ -6,11 +6,12 @@ import { testRepository } from '../test-support/repository.ts';
 import { assertionOutcome, executionReceipt } from './regression.ts';
 import { controllerRoot } from './workspace.ts';
 
+// Vitest 5 filters nested tests by suite and test names joined with ' > '.
 it.each([
   ['body fails', 'assertion-failed'],
   ['body passes', 'pass'],
-  ['setup blocked body', 'unknown'],
-  ['teardown passing body', 'unknown'],
+  ['setup > blocked body', 'unknown'],
+  ['teardown > passing body', 'unknown'],
 ])(
   'uses real Vitest execution to classify %s',
   async (name, expected) => {

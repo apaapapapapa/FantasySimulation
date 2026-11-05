@@ -144,7 +144,6 @@ describe('duration-balanced test shards', () => {
     expect(order({})).toEqual(files);
   });
   it('starts the small but heaviest file first and leaves the rest in Vitest order', async () => {
-    const root = process.cwd();
     const [heavy, next] = Object.entries(TEST_WEIGHTS)
       .sort(([, a], [, b]) => b - a)
       .map(([file]) => file);
@@ -154,22 +153,28 @@ describe('duration-balanced test shards', () => {
       [heavy!, 1],
       [next!, 1],
     ]);
-    const project = { name: '', config: { isolate: true, sequence: { groupOrder: 0 } } };
-    const sequencer = new WeightedSequencer({
-      config: { root },
-      cache: {
-        getFileTestResults: () => undefined,
-        getFileStats: (key: string) => ({ size: sizes.get(key.slice(1)) }),
-      },
-    } as never);
-    const specs = [...sizes.keys()].map((file) => ({ project, moduleId: join(root, file) }));
-    const sorted = await sequencer.sort(specs as never);
-    expect(sorted.map((spec) => relative(root, spec.moduleId))).toEqual([
-      heavy,
-      'large.test.ts',
-      'medium.test.ts',
-      next,
-    ]);
+    // Without earlier results, Vitest orders files by their size on disk.
+    const repo = testRepository(
+      Object.fromEntries([...sizes].map(([file, size]) => [file, 'x'.repeat(size)])),
+    );
+    try {
+      const root = repo.root;
+      const project = { name: '', config: { isolate: true, sequence: { groupOrder: 0 } } };
+      const sequencer = new WeightedSequencer({
+        config: { root },
+        cache: { getTestSpecificationResult: () => undefined },
+      } as never);
+      const specs = [...sizes.keys()].map((file) => ({ project, moduleId: join(root, file) }));
+      const sorted = await sequencer.sort(specs as never);
+      expect(sorted.map((spec) => relative(root, spec.moduleId))).toEqual([
+        heavy,
+        'large.test.ts',
+        'medium.test.ts',
+        next,
+      ]);
+    } finally {
+      repo.dispose();
+    }
     const { default: config } = await import('../../vite.config.ts');
     expect(config.test?.sequence?.sequencer).toBe(WeightedSequencer);
   });

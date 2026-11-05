@@ -9,8 +9,9 @@ const fixtures = JSON.parse(
   readFileSync(new URL('../../fixtures/spatial/probe.json', import.meta.url), 'utf8'),
 ) as { name: string; inputHash: string; digest: string }[];
 const sha = (value: unknown) => createHash('sha256').update(JSON.stringify(value)).digest('hex');
+// Vitest 5 no longer quotes string values; keep the corpus-mapped test names.
 it.each(probeInputs)(
-  'reproduces the full 6000-step $name geometry fixture on both CI platforms',
+  "reproduces the full 6000-step '$name' geometry fixture on both CI platforms",
   (input) => {
     const fixture = fixtures.find((row) => row.name === input.name)!;
     expect(sha(input)).toBe(fixture.inputHash);
