@@ -90,7 +90,7 @@ export function writableOutputs(workspace: string) {
     'packages/domain/dist',
     'packages/engine/dist',
     ...dependencyWorkspaces.flatMap((prefix) =>
-      ['.vite', '.vite-temp'].map((cache) => join(prefix, 'node_modules', cache)),
+      ['.vite', '.vite-temp', '.vitest-cache'].map((cache) => join(prefix, 'node_modules', cache)),
     ),
   ];
   ensure(!git(workspace, ['ls-files', '--', ...paths]), 'Writable output contains tracked source');
