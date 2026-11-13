@@ -89,7 +89,7 @@ describe('fixed-step battle stream', () => {
       eventHash: 'sha256:c33c626706ecfc300ab2b12d210ff98ed0f0610e917aa99a93976ba7a25d72bb',
       trajectoryHash: 'sha256:350ceaea42b58f4b944d21f43adff6ac951da8a1ceebb84a36614792f4b6b689',
       tsStateHash: 'sha256:04897634a27969f45d79a99be5d152dabb811f157c42fea5b6dc7e598f61d3ad',
-      physicsStateHash: 'sha256:680dac7ee74bc7a5cbdfee30427f3b7ec229ebfa68febdf361bc4ab90d551976',
+      physicsStateHash: 'sha256:e5f82957a17535dc6ed61e002397d0c55660acbfa080f63915793fad13449a83',
     });
     expect(input.schemaVersion).toBe(3);
     expect(JSON.stringify(run.records)).not.toMatch(/sensorView|environmentalHologram/);

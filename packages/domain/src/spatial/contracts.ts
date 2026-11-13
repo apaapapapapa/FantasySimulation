@@ -1467,7 +1467,8 @@ export const ParticipantSchema = z.strictObject({
 });
 export const PhysicsProfileSchema = z.strictObject({
   id: z.literal('spatial-v1'),
-  rapier: z.literal('0.20.0'),
+  // Saved 0.20.0 profiles stay readable; execution requires the current profile hash.
+  rapier: z.union([z.literal('0.20.0'), z.literal('0.21.0')]),
   axis: z.literal('right-handed-Y-up'),
   inputUnits: z.literal('integer-mm-ms'),
   stepMs: z.literal(20),

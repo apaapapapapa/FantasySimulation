@@ -30,6 +30,8 @@ let ready: Promise<void> | undefined;
 export async function initializePhysics(): Promise<void> {
   await (ready ??= RAPIER.init());
 }
+/** Version reported by the loaded Rapier WASM; the physics profile must record it. */
+export const physicsVersion = () => RAPIER.version();
 type SweepHit = { time_of_impact: number; normal1: Vec3; obstacleId: string };
 export const COLLISION_SKIN = 0.002;
 export const CONTACT_TOLERANCE = 1e-6;

@@ -365,6 +365,22 @@
         "https://github.com/apaapapapapa/FantasySimulation/actions/runs/35862327313/job/107185391410",
         "https://github.com/apaapapapapa/FantasySimulation/actions/runs/35862327313/job/107185783958"
       ]
+    },
+    {
+      "baselineSha": "7eb00b47c83ce0d427b55aca74b7c000c3964061",
+      "beforeDigest": "ece8c7827296c3fb0772e7fa759d6baf27094f8099e2c73f0d9e487f660881ac",
+      "afterDigest": "c03309829f356f43d27995a87f0216948f10fdbb9195a694db8c77c38352a918",
+      "introduction": false,
+      "comparison": "independent",
+      "reviewer": "Claude Code self-review; not independent approval",
+      "reason": "#354 adopts Rapier 0.21.0. Full CI run 43458749696 attempt 1 compared exact main 2026c30 with candidate cc8250a. All three shards validate their raw alternating trials, commands, regression probes and unchanged budgets. Each of the seven cases has five before and five after observations, and every outcome and deterministic count/byte vector is stable and identical across both revisions. Only the corpus contract (wasmHash, physicsProfileHash) and each fixed inputHash changed; substituting the Rapier 0.20.0 identity reproduces every previous inputHash exactly. The gate correctly reported the missing independent-transition review (exit 2). This entry binds those observed cost digests to the current baseline 7eb00b4, which differs from 2026c30 only by the UI runner pin in .github/workflows/ci.yml (#356) and leaves the corpus, load profile, toolchain and measured code unchanged. It does not change limits, fixtures, expectations or evidence identities and makes no timing/RSS claim. New CI must reproduce these costs on its own source and attempt.",
+      "evidence": [
+        "https://github.com/apaapapapapa/FantasySimulation/actions/runs/43458749696/artifacts/14054833093",
+        "https://github.com/apaapapapapa/FantasySimulation/actions/runs/43458749696/job/131999917658",
+        "https://github.com/apaapapapapa/FantasySimulation/actions/runs/43458749696/job/131999917450",
+        "https://github.com/apaapapapapa/FantasySimulation/actions/runs/43458749696/job/131999917449",
+        "https://github.com/apaapapapapa/FantasySimulation/actions/runs/43458749696/job/132001527626"
+      ]
     }
   ]
 }

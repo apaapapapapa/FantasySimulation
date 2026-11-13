@@ -18,10 +18,12 @@ import {
   firstContact,
   firstImpact,
   initializePhysics,
+  physicsVersion,
   SpatialWorld,
   stopAt,
   straight,
 } from './world/physics.ts';
+import profile from './profile.json' with { type: 'json' };
 
 beforeAll(initializePhysics);
 const body = { radius: 0.3, halfHeight: 0.6 };
@@ -35,6 +37,10 @@ const wall: Obstacle = {
 };
 
 describe('3D-01 physics feasibility', () => {
+  it('records the loaded Rapier WASM version in the physics profile', () => {
+    expect(physicsVersion()).toBe(profile.rapier);
+    expect(profile.rapier).toBe('0.21.0');
+  });
   it('finds exact capsule surface contact and agrees with Rapier casts within their 5mm tolerance', () => {
     const projectile = ballShape(0.05),
       target = shape();

@@ -1,6 +1,7 @@
 # ADR 0002: 3D計算基盤と互換性の撤回
 
-Adopted: #1 3D-01–08, TS + Rapier3D WASM0.20.0. Each match owns/frees its world.
+Adopted: #1 3D-01–08, TS + Rapier3D WASM0.20.0; 0.21.0 (#354) kept all decisions.
+Each match owns/frees its world.
 Binary64 capsule/ball relative sweeps plus static f32 queries retain bent slides/
 simultaneous contacts. Initial basic/tick/API201 replacement never authorized DB
 deletion/conversion; later versions: [ADR0010](0010-battle-version-compatibility.md).

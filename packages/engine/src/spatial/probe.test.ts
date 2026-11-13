@@ -7,7 +7,7 @@ import { probeInputs, runProbe } from './world/probe.ts';
 beforeAll(initializePhysics);
 const fixtures = JSON.parse(
   readFileSync(new URL('../../fixtures/spatial/probe.json', import.meta.url), 'utf8'),
-) as { name: string; inputHash: string; digest: string }[];
+) as { name: string; inputHash: string; geometry: string; digest: string }[];
 const sha = (value: unknown) => createHash('sha256').update(JSON.stringify(value)).digest('hex');
 // Vitest 5 no longer quotes string values; keep the corpus-mapped test names.
 it.each(probeInputs)(
@@ -15,7 +15,10 @@ it.each(probeInputs)(
   (input) => {
     const fixture = fixtures.find((row) => row.name === input.name)!;
     expect(sha(input)).toBe(fixture.inputHash);
-    expect(sha(runProbe(input))).toBe(fixture.digest);
+    const run = runProbe(input);
+    // Rapier upgrades may change snapshot bytes; geometry must still match its pinned outcome.
+    expect(sha({ checkpoints: run.checkpoints, casts: run.casts })).toBe(fixture.geometry);
+    expect(sha(run)).toBe(fixture.digest);
   },
   60_000,
 );

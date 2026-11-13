@@ -127,6 +127,14 @@ it('binds every explicit ordered cell to an executed behavior, diagnostic or rej
   expect(() => validateCoverage(missingBinding)).toThrow('corpus binding');
 });
 
+// Rapier 0.21.0 changed only the WASM identity and its world snapshot encoding. The pre-P6
+// baseline keeps its Rapier 0.20.0 input identity and static flat-world snapshot hash.
+const RAPIER_0_20_WASM = 'sha256:4d621b86d803ce9922ac44c1829902f1b60fd02d3c8b364e05374938af15ead4';
+const FLAT_SNAPSHOT_0_20 =
+  'sha256:680dac7ee74bc7a5cbdfee30427f3b7ec229ebfa68febdf361bc4ab90d551976';
+const FLAT_SNAPSHOT_0_21 =
+  'sha256:e5f82957a17535dc6ed61e002397d0c55660acbfa080f63915793fad13449a83';
+
 it('preserves all 484 pre-P6 ordered-pair outcomes and event trajectory state physics hashes', async () => {
   const cases = new Map(baseline.cases.map((c) => [c.id, c]));
   expect(cases.size).toBe(484);
@@ -136,8 +144,8 @@ it('preserves all 484 pre-P6 ordered-pair outcomes and event trajectory state ph
       const fixture = cases.get(`${left}/${right}`)!;
       expect(fixture, `${left}/${right}`).toBeDefined();
       const manifest = await interferencePairManifest(left, right);
-      // Compare the immutable pre-P6 input under its original rules label without
-      // executing that old ruleset. Only the rules label/name/version differs in v1.22.
+      // Compare the immutable pre-P6 input under its original rules label and Rapier
+      // identity without executing either. Only those labels differ in v1.22.
       const old = manifest.revisions.find((r) => r.kind === 'ruleset')!;
       if (old.kind !== 'ruleset') throw new Error('Missing fixture rules');
       const historical = {
@@ -146,17 +154,24 @@ it('preserves all 484 pre-P6 ordered-pair outcomes and event trajectory state ph
         definition: { ...old.definition, name: '標準3D', rulesVersion: 'spatial-v1.20' },
       };
       historical.contentHash = await revisionHash(historical);
+      const physicsProfile = { ...manifest.physicsProfile, rapier: '0.20.0' as const };
       const { implementationDigest: _, ...input } = {
         ...manifest,
         engineVersion: 'spatial-v1.20',
         ruleset: reference(historical),
         revisions: manifest.revisions.map((r) => (r === old ? historical : r)),
+        wasmHash: RAPIER_0_20_WASM,
+        physicsProfile,
+        physicsProfileHash: await contentHash(physicsProfile),
       };
       expect(await contentHash(input), fixture.id).toBe(fixture.inputHash);
       const uses = new Set(closureMechanics(manifest.revisions).map((use) => use.mechanic));
       expect(uses.has(left) && uses.has(right), fixture.id).toBe(true);
       const { simulationHash: _hash, ...result } = (await runBattle(manifest)).result;
-      expect(result, fixture.id).toEqual(fixture.expected);
+      expect(result.physicsStateHash, fixture.id).toBe(FLAT_SNAPSHOT_0_21);
+      expect({ ...result, physicsStateHash: FLAT_SNAPSHOT_0_20 }, fixture.id).toEqual(
+        fixture.expected,
+      );
       checked++;
     }
   expect(checked).toBe(cases.size);
