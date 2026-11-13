@@ -1,6 +1,6 @@
 {
   "id": "spatial-v1",
-  "rapier": "0.20.0",
+  "rapier": "0.21.0",
   "axis": "right-handed-Y-up",
   "inputUnits": "integer-mm-ms",
   "stepMs": 20,

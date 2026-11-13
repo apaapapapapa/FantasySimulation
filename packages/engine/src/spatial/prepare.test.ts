@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vite-plus/test';
-import { contentHash, type Revision } from '@fantasy/domain/spatial';
+import { contentHash, StoredManifestSchema, type Revision } from '@fantasy/domain/spatial';
 import { sampleManifest } from '@fantasy/samples';
+import { executionEligibility } from './execution-policy.ts';
 import { prepareBattle, reference, revisionHash } from './prepare.ts';
 import { sealRevision, ManifestBuilder } from './manifest-builder.ts';
 
@@ -129,6 +130,26 @@ describe('immutable spatial manifest resolution', () => {
       await expect(prepareBattle(input)).rejects.toThrow('identity');
     },
   );
+  it('reads a saved Rapier 0.20.0 manifest but never executes it on the current physics', async () => {
+    const current = await sampleManifest();
+    const physicsProfile = { ...current.physicsProfile, rapier: '0.20.0' as const };
+    const saved = {
+      ...current,
+      physicsProfile,
+      physicsProfileHash: await contentHash(physicsProfile),
+      wasmHash: 'sha256:4d621b86d803ce9922ac44c1829902f1b60fd02d3c8b364e05374938af15ead4',
+    };
+    expect(StoredManifestSchema.parse(saved)).toEqual(saved);
+    expect(executionEligibility(saved)).toMatchObject({
+      executable: false,
+      code: 'unsupported-identity',
+    });
+    await expect(prepareBattle(saved)).rejects.toThrow('identity');
+    // A recorded 0.20.0 profile cannot borrow the current WASM identity either.
+    await expect(prepareBattle({ ...saved, wasmHash: current.wasmHash })).rejects.toThrow(
+      'identity',
+    );
+  });
   it('rejects a valid-looking hash whose content was changed', async () => {
     const input = await sampleManifest();
     const character = input.revisions.find((r) => r.kind === 'character')!;

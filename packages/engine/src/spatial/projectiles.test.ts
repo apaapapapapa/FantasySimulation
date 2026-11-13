@@ -78,7 +78,7 @@ describe('projectiles, curved sweeps and explosions', () => {
       eventHash: 'sha256:ec4003f7cc18a2c85f827acaaca421b71b2e2e6be08e5dc775167e02a75abe74',
       trajectoryHash: 'sha256:ca3d805e79f7e5614123f61c2c2467d27b90fb3ba571193340ff7916d23af738',
       tsStateHash: 'sha256:72f1812258099bb662be92b828f05e007f0bcd20ed204799ecc0a8cd88cda811',
-      physicsStateHash: 'sha256:680dac7ee74bc7a5cbdfee30427f3b7ec229ebfa68febdf361bc4ab90d551976',
+      physicsStateHash: 'sha256:e5f82957a17535dc6ed61e002397d0c55660acbfa080f63915793fad13449a83',
     });
     expect(run.result.stats.peakProjectiles).toBe(2);
     const log = events(run.records);
