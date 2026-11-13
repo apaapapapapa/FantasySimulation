@@ -124,7 +124,9 @@ jobs:
     # Each part is a separate runner; ci-gate recombines and rechecks their raw evidence.
     if: github.event_name != 'pull_request'
     name: UI (Linux ${{ matrix.part }})
-    runs-on: ubuntu-latest
+    # Browser libraries/apt sources and visual baselines are reviewed on Noble only;
+    # ubuntu-latest moved to 26.04, which scripts/ci/playwright-apt.ts rejects.
+    runs-on: ubuntu-24.04
     timeout-minutes: 8
     strategy:
       fail-fast: false
