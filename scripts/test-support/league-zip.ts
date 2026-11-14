@@ -16,7 +16,7 @@ export async function realArtifactZip(files: string[], root: string, compression
   const metadata = JSON.parse(await readFile(new URL('../package.json', sdk), 'utf8')) as {
     version: string;
   };
-  if (metadata.version !== '6.2.1') throw new Error('Fixture requires pinned artifact SDK 6.2.1');
+  if (metadata.version !== '6.3.1') throw new Error('Fixture requires pinned artifact SDK 6.3.1');
   const directory = await mkdtemp(join(tmpdir(), 'fantasy-sdk-zip-'));
   try {
     let bytes = 0;

@@ -121,7 +121,7 @@ async function upload() {
   const sdk = JSON.parse(await readFile(resolve(sdkRoot, '../package.json'), 'utf8')) as {
     version?: unknown;
   };
-  if (sdk.version !== '6.2.1') throw new Error('Unreviewed child SDK');
+  if (sdk.version !== '6.3.1') throw new Error('Unreviewed child SDK');
   const { default: artifact } = await import('@actions/artifact');
   const result = await artifact.uploadArtifact(receipt.name, [path], dirname(path), {
     skipArchive: true,

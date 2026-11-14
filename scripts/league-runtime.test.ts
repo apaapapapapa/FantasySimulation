@@ -10,11 +10,12 @@ it('installs the hashed native dependency closure and root loader in a separate 
   await withReplayDirectory(async (root) => {
     const fixture = await runtimeFixture(root);
     const manifest = JSON.parse(await readFile(join(fixture.distribution, 'runtime.json'), 'utf8'));
-    // The SDK fixture declares its build-only generator, intentionally absent from
-    // the checkout. Installing/importing the SDK must need only its generated RPC.
-    expect(
-      manifest.files.some((entry: { path: string }) => entry.path.includes('@protobuf-ts+plugin')),
-    ).toBe(false);
+    // The SDK's declared generated-RPC runtime is packaged beside it; no root workaround.
+    const paths = manifest.files.map((entry: { path: string }) => entry.path);
+    expect(paths).toContain(
+      'node_modules/.pnpm/@actions+artifact@1/node_modules/@protobuf-ts/runtime-rpc',
+    );
+    expect(paths).not.toContain('node_modules/@protobuf-ts/runtime-rpc');
     await installLeagueRuntime(fixture.target, fixture.distribution, fixture.sha);
     expect(await readlink(join(fixture.target, 'node_modules/@fantasy/api'))).toBe(
       '../../apps/api',
@@ -56,11 +57,11 @@ it.each(['sourceSha', 'node', 'platform', 'arch', 'lockHash', 'archiveHash'] as 
     });
   },
 );
-it('requires the declared generator dependency again when the artifact SDK version changes', async () => {
+it('requires every runtime dependency the artifact SDK declares', async () => {
   await withReplayDirectory(async (root) => {
-    await expect(runtimeFixture(root, '6.2.2')).rejects.toThrow(
-      'Missing runtime dependency: @protobuf-ts/plugin',
-    );
+    await expect(
+      runtimeFixture(root, ['@protobuf-ts/runtime-rpc', '@protobuf-ts/plugin']),
+    ).rejects.toThrow('Missing runtime dependency: @protobuf-ts/plugin');
   });
 });
 it('rejects an altered native file digest and a path traversing out of the checkout', async () => {

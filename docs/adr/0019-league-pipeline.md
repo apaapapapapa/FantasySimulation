@@ -144,7 +144,7 @@ CPU proof separate, cycle updates adjacent.
 4CPU/16GB; [limits](https://docs.github.com/en/actions/reference/limits):Free20/Pro40/Team60 jobs,
 GITHUB_TOKEN1000 calls/hour/repo. [upload-artifact](https://github.com/actions/upload-artifact#number-of-artifacts)
 says500/job; [toolkit](https://github.com/actions/toolkit/blob/main/packages/artifact/README.md)
-says10. Resolve pinned6.2.1 by pilot; account/storage headroom/competing CI unknown.
+says10. Resolve pinned6.3.1 by pilot; account/storage headroom/competing CI unknown.
 [R2 ranges](https://developers.cloudflare.com/r2/api/workers/workers-api-reference/#ranged-reads)
 are supported, not measured throughput. No billing/permission expansion.
 

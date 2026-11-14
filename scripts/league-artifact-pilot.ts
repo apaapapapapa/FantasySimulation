@@ -13,7 +13,7 @@ const github = new PipelineArtifacts(context.token, context.identity, 200, 'leag
 const prefix = context.prefix,
   started = performance.now();
 const payload = (index: number) =>
-  canonicalJson({ identity: context.identity, index, bytes: 'quota-and-live-visibility-6.2.1' });
+  canonicalJson({ identity: context.identity, index, bytes: 'quota-and-live-visibility-6.3.1' });
 const action = process.argv[2];
 if (action === 'produce') {
   for (let index = 0; index < 32; index++) {

@@ -3,7 +3,8 @@ import { join, dirname, relative } from 'node:path';
 import { execFileSync } from 'node:child_process';
 import { buildLeagueRuntime } from '../league-runtime.ts';
 
-export async function runtimeFixture(root: string, artifactVersion = '6.2.1') {
+// Like @actions/artifact 6.3.1, the SDK declares the runtime its generated RPC imports.
+export async function runtimeFixture(root: string, sdkDependencies = ['@protobuf-ts/runtime-rpc']) {
   const source = join(root, 'source'),
     distribution = join(root, 'distribution'),
     target = join(root, 'target');
@@ -29,6 +30,8 @@ export async function runtimeFixture(root: string, artifactVersion = '6.2.1') {
     await mkdir(dirname(link), { recursive: true });
     await symlink(relative(dirname(link), join(source, path)), link);
   }
+  const real = (name: string) =>
+    join(source, 'node_modules/.pnpm', name.replace('/', '+') + '@1/node_modules', name);
   for (const name of [
     '@actions/artifact',
     '@protobuf-ts/runtime-rpc',
@@ -38,29 +41,27 @@ export async function runtimeFixture(root: string, artifactVersion = '6.2.1') {
     'tsx',
     'zod',
   ]) {
-    const real = join(
-      source,
-      'node_modules/.pnpm',
-      name.replace('/', '+') + '@1/node_modules',
-      name,
-    );
     await write(
-      join(real, 'package.json'),
+      join(real(name), 'package.json'),
       JSON.stringify({
         name,
-        version: name === '@actions/artifact' ? artifactVersion : '1.0.0',
+        version: '1.0.0',
         type: 'module',
         exports: './index.js',
         ...(name === '@actions/artifact'
-          ? { dependencies: { '@protobuf-ts/plugin': '2.11.1' } }
+          ? { dependencies: Object.fromEntries(sdkDependencies.map((dep) => [dep, '1.0.0'])) }
           : {}),
       }),
     );
-    await write(join(real, 'index.js'), 'export const fixture = true;');
-    await write(join(real, 'native.node'), 'opaque native bytes');
-    const link = join(source, 'node_modules', name);
+    await write(join(real(name), 'index.js'), 'export const fixture = true;');
+    await write(join(real(name), 'native.node'), 'opaque native bytes');
+    // pnpm links a package's own dependency beside it, not at the workspace root.
+    const link =
+      name === '@protobuf-ts/runtime-rpc'
+        ? join(dirname(dirname(real('@actions/artifact'))), name)
+        : join(source, 'node_modules', name);
     await mkdir(dirname(link), { recursive: true });
-    await symlink(relative(dirname(link), real), link);
+    await symlink(relative(dirname(link), real(name)), link);
   }
   await write(
     join(source, 'node_modules/@actions/artifact/index.js'),
