@@ -61,7 +61,7 @@ export async function calibrationArchiveStream(files: string[], root: string) {
   const manifest = JSON.parse(await readFile(join(sdkRoot, '../package.json'), 'utf8')) as {
     version?: unknown;
   };
-  if (manifest.version !== '6.2.1')
+  if (manifest.version !== '6.3.1')
     throw new Error('Calibration requires the reviewed artifact SDK');
   const specification = (await import(
     pathToFileURL(join(sdkRoot, 'internal/upload/upload-zip-specification.js')).href

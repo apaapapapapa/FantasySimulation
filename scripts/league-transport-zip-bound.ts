@@ -12,7 +12,7 @@ export function inspectTransportZipBound(input: {
 }) {
   const { encoder, rawBytesUpper, fileCountUpper, maxNameBytesUpper } = input;
   if (
-    encoder !== 'actions-artifact-6.2.1-store-files-v1' ||
+    encoder !== 'actions-artifact-6.3.1-store-files-v1' ||
     !Number.isSafeInteger(rawBytesUpper) ||
     rawBytesUpper < 0 ||
     rawBytesUpper > TRANSPORT_V2_LIMITS.rawArchiveBytes ||

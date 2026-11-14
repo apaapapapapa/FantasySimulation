@@ -106,8 +106,6 @@ const rootDependencies = [
   '@fantasy/engine',
   '@fantasy/samples',
   '@actions/artifact',
-  // Artifact 6.2.1 generated RPC code imports this undeclared runtime dependency.
-  '@protobuf-ts/runtime-rpc',
   '@octokit/core',
   '@octokit/plugin-paginate-rest',
   // The transfer job's fresh-browser acceptance; its browser is installed per run, never cached.
@@ -255,22 +253,14 @@ async function runtimeInventory(root: string) {
       ...optional,
       ...(workspace && value.devDependencies?.tsx ? { tsx: value.devDependencies.tsx } : {}),
     };
+    // Every declared runtime dependency is required; the artifact SDK no longer needs
+    // a version-specific exception since 6.3.1 declares exactly its generated-RPC runtime.
     for (const name of Object.keys(dependencies).sort())
-      // The pinned artifact SDK ships generated JS; protoc's TS generator is not
-      // imported by that JS. Keep this exception version/edge-specific: a new SDK
-      // version must include its declared closure until reviewed again.
-      if (
-        !(
-          value.name === '@actions/artifact' &&
-          value.version === '6.2.1' &&
-          name === '@protobuf-ts/plugin'
-        )
-      )
-        await dependency(
-          directory,
-          name,
-          name in optional || value.peerDependenciesMeta?.[name]?.optional === true,
-        );
+      await dependency(
+        directory,
+        name,
+        name in optional || value.peerDependenciesMeta?.[name]?.optional === true,
+      );
   }
   for (const name of rootDependencies) await dependency(root, name, false);
   const inventory = [...files.values()].sort((a, b) => a.path.localeCompare(b.path));

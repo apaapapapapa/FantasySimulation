@@ -185,7 +185,7 @@ async function sealedSegment(options: LocalOptions | ServiceOptions) {
     const manifest = JSON.parse(await readFile(join(sdkRoot, '../package.json'), 'utf8')) as {
       version?: unknown;
     };
-    if (manifest.version !== '6.2.1') throw new Error('Diagnostic SDK version mismatch');
+    if (manifest.version !== '6.3.1') throw new Error('Diagnostic SDK version mismatch');
     const receipt = Object.freeze({
       name,
       bytes: zip.length,

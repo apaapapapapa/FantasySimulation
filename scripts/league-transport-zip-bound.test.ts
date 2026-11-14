@@ -5,7 +5,7 @@ import { withReplayDirectory } from '@fantasy/api/testing';
 import { calibrationEncodedBytes } from './league-calibration-upload.ts';
 import { inspectTransportZipBound } from './league-transport-zip-bound.ts';
 
-const encoder = 'actions-artifact-6.2.1-store-files-v1';
+const encoder = 'actions-artifact-6.3.1-store-files-v1';
 const envelope = {
   encoder,
   rawBytesUpper: 48 * 1024 ** 2,

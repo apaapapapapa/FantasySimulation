@@ -264,7 +264,7 @@ async function buildTransportSeal(
   )
     throw new Error('Transport exact inventory/checksum mismatch');
   const report = inspectTransportZipBound({
-    encoder: 'actions-artifact-6.2.1-store-files-v1',
+    encoder: 'actions-artifact-6.3.1-store-files-v1',
     rawBytesUpper: before.rawBytes,
     fileCountUpper: before.files.size,
     maxNameBytesUpper: before.maxNameBytes,
