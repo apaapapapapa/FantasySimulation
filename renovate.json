@@ -6,7 +6,9 @@
   "schedule": ["at any time"],
   "prHourlyLimit": 2,
   "prConcurrentLimit": 3,
-  "dependencyDashboard": true,
+  "dependencyDashboard": {
+    "enabled": true
+  },
   "dependencyDashboardApproval": false,
   "semanticCommits": "enabled",
   "semanticCommitType": "chore",
